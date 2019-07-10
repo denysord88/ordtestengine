@@ -23,13 +23,15 @@ public class TestStep {
   private ObjectId id;
   private String step;
   private String result;
+  private ObjectId authorId;
 
   public TestStep() {
   }
 
-  public TestStep(final String step, final String result) {
+  public TestStep(final String step, final String result, final ObjectId authorId) {
     this.step = step;
     this.result = result;
+    this.authorId = authorId;
   }
 
   public ObjectId getId() {
@@ -56,6 +58,14 @@ public class TestStep {
     this.result = result;
   }
 
+  public ObjectId getAuthorId() {
+    return authorId;
+  }
+
+  public void setAuthorId(final ObjectId authorId) {
+    this.authorId = authorId;
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -76,6 +86,9 @@ public class TestStep {
     if (getResult() != null ? !getResult().equals(testStep.getResult()) : testStep.getResult() != null) {
       return false;
     }
+    if (getAuthorId() != null ? !getAuthorId().equals(testStep.getAuthorId()) : testStep.getAuthorId() != null) {
+      return false;
+    }
 
     return true;
   }
@@ -85,6 +98,7 @@ public class TestStep {
     int result = getId() != null ? getId().hashCode() : 0;
     result = 31 * result + (getStep() != null ? getStep().hashCode() : 0);
     result = 31 * result + (getResult() != null ? getResult().hashCode() : 0);
+    result = 31 * result + (getAuthorId() != null ? getAuthorId().hashCode() : 0);
     return result;
   }
 
@@ -93,7 +107,8 @@ public class TestStep {
     return "TestStep{"
         + "id='" + id + "',"
         + "step='" + step + "',"
-        + "result='" + result + "'"
+        + "result='" + result + "',"
+        + "authorId='" + authorId.toString() + "'"
         + "}";
   }
 }
