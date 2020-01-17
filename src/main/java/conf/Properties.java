@@ -15,7 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package pojo;
+package conf;
 
-public class TestStepAttachment {
+public class Properties {
+    public static final String MONGO_HOST = ConfFile.get("MONGO_HOST");
+    public static final String MONGO_PORT = ConfFile.get("MONGO_PORT");
+    public static final String MONGO_INITDB_ROOT_USERNAME = ConfFile.get("MONGO_INITDB_ROOT_USERNAME");
+    public static final String MONGO_INITDB_ROOT_PASSWORD = ConfFile.get("MONGO_INITDB_ROOT_PASSWORD");
 }
