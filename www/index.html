@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OrdTestEngine</title>
+</head>
+<body>
+<button onclick="send()">send</button>
+<script>
+    function send() {
+        var xhr = new XMLHttpRequest();
+        var url = "/getjson";
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-type", "application/json");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log(xhr.responseText);
+            }
+        };
+        var data = JSON.stringify({"email": "hey@mail.com", "password": "101010"});
+        xhr.send(data);
+    }
+</script>
+</body>
+</html>

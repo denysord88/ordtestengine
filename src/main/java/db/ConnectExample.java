@@ -17,7 +17,7 @@
  */
 package db;
 
-import com.mongodb.client.MongoCollection;
+/*import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.UpdateResult;
 import conf.Properties;
@@ -46,9 +46,9 @@ import static com.mongodb.client.model.Filters.not;
 import static com.mongodb.client.model.Updates.combine;
 import static com.mongodb.client.model.Updates.set;
 import static java.util.Arrays.asList;
-
+*/
 public class ConnectExample {
-    public static void main(String[] args) {
+    /*public static void main(String[] args) {
         MongoClient mongoClient;
 
         mongoClient = MongoClients.create("mongodb://" +
@@ -57,13 +57,13 @@ public class ConnectExample {
                 Properties.MONGO_HOST + ":" +
                 Properties.MONGO_PORT);
 
-    /*if (args.length == 0) {
+    if (args.length == 0) {
       // connect to the local database server
       mongoClient = MongoClients.create();
     } else {
       mongoClient = MongoClients.create("mongodb://mongoadmin:secret@127.0.0.1:27017/?authSource=mydb");
       //mongoClient = MongoClients.create(args[0]);
-    }*/
+    }
 
         // create codec registry for POJOs
         CodecRegistry pojoCodecRegistry = fromRegistries(MongoClientSettings.getDefaultCodecRegistry(),
@@ -170,5 +170,5 @@ public class ConnectExample {
 
         // release resources
         mongoClient.close();
-    }
+    }*/
 }
