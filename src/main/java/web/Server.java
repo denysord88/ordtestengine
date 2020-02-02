@@ -7,13 +7,12 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLDecoder;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.LinkedHashMap;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class Server {
@@ -63,9 +62,16 @@ public class Server {
             if (connectedClients >= Properties.SERVER_MAX_CONNECTIONS) return;
             connectedClients++;
             LinkedHashMap<String, String> requestHeaders = new LinkedHashMap<>();
-            byte[] postRequestData = readRequestHeaders(requestHeaders);
-            String postRequestDataStr = "";
-            if (postRequestData != null && postRequestData.length > 0
+            List<Integer> postRequestData = new LinkedList<>();
+            postRequestData.addAll(readRequestHeaders(requestHeaders));
+            if(!postRequestData.isEmpty()) {
+                StringBuilder postRequestDataStr = new StringBuilder();
+                postRequestData.forEach(elem -> {
+                    postRequestDataStr.append((char) elem.intValue());
+                });
+                System.out.println();
+            }
+            /*if (postRequestData != null && postRequestData.length > 0
                     && requestHeaders.containsKey("content-type")
                     && requestHeaders.get("content-type").equalsIgnoreCase("application/json")) {
                 postRequestDataStr = normalizeText(new String(postRequestData, StandardCharsets.UTF_8))
@@ -73,20 +79,20 @@ public class Server {
                         .replaceAll("\r", " ")
                         .replaceAll("\n", " ")
                         .replaceAll("  ", " ");
-            }
+            }*/
 
             LinkedHashMap<String, String> responseHTTPHeaders = new LinkedHashMap<>();
             responseHTTPHeaders.put("HTTP/1.1 2", "00 OK\r\n");
             responseHTTPHeaders.put("Server: ", "YarServer/2009-09-09\r\n");
 
-            String response = "";
+            byte[] response = null;
             if (requestHeaders.keySet().contains("endpoint")) {
                 response = findFile(requestHeaders.get("endpoint"));
-            } else response = "Method not yet implemented";
+            } else response = "Method not yet implemented".getBytes();
 
-            responseHTTPHeaders.put("content-length: ", response.length() + "\r\n");
-            responseHTTPHeaders.put("connection: ", "close\r\n\r\n");
-            writeResponse(getBytesFromStringMap(responseHTTPHeaders), response.getBytes());
+            responseHTTPHeaders.put("Content-Length: ", response.length + "\r\n");
+            responseHTTPHeaders.put("Connection: ", "Close\r\n\r\n");
+            writeResponse(getBytesFromStringMap(responseHTTPHeaders), response);
         }
 
         private byte[] getBytesFromStringMap(LinkedHashMap<String, String> map) {
@@ -107,29 +113,35 @@ public class Server {
             }
         }
 
-        private byte[] readRequestHeaders(LinkedHashMap<String, String> headersMap) {
-            byte[] rawRequest = null;
+        private List<Integer> readRequestHeaders(LinkedHashMap<String, String> headersMap) {
+            ArrayList<Integer> inputData = new ArrayList<>();
             try {
-                int inputLength = inputStream.available();
-                if (inputStream.available() > 0) {
-                    rawRequest = new byte[inputLength];
-                    inputStream.read(rawRequest);
+                while(true) {
+                    if(inputStream.available() <= 0) break;
+                    int input = inputStream.read();
+                    if(input < 0) break;
+                    inputData.add(input);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
-                return null;
+                return new ArrayList<>();
             }
-            if (rawRequest == null) return null;
-            String requestString = "";
-            requestString = new String(rawRequest, StandardCharsets.UTF_8);
-            String[] requestHeaders = requestString.split("\n");
+            StringBuilder headers = new StringBuilder();
+            for(int i = 0; i < inputData.size(); i++) {
+                headers.append((char) inputData.get(i).intValue());
+                if(headers.toString().endsWith("\r\n\r\n")) {
+                    break;
+                }
+            }
+            String[] requestHeaders = headers.toString().split("\r\n");
+
             String method = requestHeaders[0].split("/", 2)[0].trim().toLowerCase();
             headersMap.put("method", method);
             String[] withMethod = requestHeaders[0].split("/", 2);
-            if (withMethod.length != 2) return null;
-            String endpoint = withMethod[1].replaceAll("[Hh][Tt][Tt][Pp] */[\\d]\\.[\\d]\r?$", "").trim();
+            if (withMethod.length != 2) return new ArrayList<>();
+            String endpoint = withMethod[1].replaceAll("[Hh][Tt][Tt][Pp][Ss/ ]*[\\d]\\.[\\d]$", "").trim();
             headersMap.put("endpoint", "/"
-                    + endpoint);
+                    + (endpoint.isEmpty() ? "index.html" : endpoint));
             for (int i = 1; i < requestHeaders.length; i++) {
                 if (requestHeaders[i].trim().isEmpty()) {
                     break;
@@ -140,22 +152,28 @@ public class Server {
                 }
                 headersMap.put(normalizeText(header[0]).toLowerCase(), normalizeText(header[1]));
             }
-            if (method.equals("post") && headersMap.containsKey("content-length")
-                    && headersMap.get("content-length").replaceAll("\\d", "").isEmpty()) {
-                return Arrays.copyOfRange(rawRequest,
-                        rawRequest.length - Integer.parseInt(headersMap.get("content-length")), rawRequest.length);
-            }
-            return null;
+            if(headers.length() >= inputData.size()) return new ArrayList<>();
+
+            ByteBuffer postData = ByteBuffer.allocate(inputData.size() - headers.length());
+            return inputData.subList(headers.length(), inputData.size());
         }
 
         private String normalizeText(String text) {
             return URLDecoder.decode(StringEscapeUtils.unescapeHtml4(text.trim()));
         }
 
-        private String findFile(String endpoint) {
+        private byte[] findFile(String endpoint) {
             String fullPath = new File("").getAbsolutePath() + "/www" + (
                     endpoint.equals("/") ? "/index.html" : endpoint);
-            if (!new File(fullPath).exists()) return "Method not yet implemented";
+            if (!new File(fullPath).exists()) return "Method not yet implemented".getBytes();
+
+            try {
+                return Files.readAllBytes(Paths.get(fullPath));
+            } catch (IOException e) {
+                e.printStackTrace();
+                return "Error reading requested file".getBytes();
+            }
+/*
             StringBuilder contentBuilder = new StringBuilder();
             try (Stream<String> stream = Files.lines(Paths.get(fullPath), StandardCharsets.UTF_8)) {
                 stream.forEach(s -> contentBuilder.append(s).append("\n"));
@@ -163,7 +181,7 @@ public class Server {
                 e.printStackTrace();
                 return "Error reading requested file";
             }
-            return contentBuilder.toString();
+            return contentBuilder.toString();*/
         }
 
         private byte[] readPostRequestData(int length) {
